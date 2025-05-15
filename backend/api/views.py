@@ -40,20 +40,17 @@ class TagViewSet(viewsets.ModelViewSet):
 # ---------------------------------------------------
 
 @extend_schema_view(
-    create=extend_schema(
-        request=CoinWriteSerializer,
-        responses=CoinReadSerializer,
-        description="Создать монету. Обязательно multipart/form-data с image."
+    list=extend_schema(
+        responses=CoinReadSerializer(many=True),
+        description="Список всех монет"
     ),
-    update=extend_schema(
-        request=CoinWriteSerializer,
+    retrieve=extend_schema(
         responses=CoinReadSerializer,
-        description="Полностью обновить монету (PUT)."
+        description="Получить детали монеты"
     ),
-    partial_update=extend_schema(
-        request=CoinWriteSerializer,
-        responses=CoinReadSerializer,
-        description="Частично обновить монету (PATCH)."
+    destroy=extend_schema(
+        responses={204: OpenApiTypes.NONE},
+        description="Удалить монету"
     ),
 )
 class CoinViewSet(viewsets.ModelViewSet):
@@ -65,15 +62,28 @@ class CoinViewSet(viewsets.ModelViewSet):
     ordering_fields = ('estimated_value', 'pub_date')
 
     @extend_schema(
-        request={'multipart/form-data': CoinWriteSerializer},
-        responses=CoinReadSerializer,
+        request=CoinWriteSerializer,
+        responses={201: CoinReadSerializer},
         description="Создать монету с загрузкой изображения"
     )
-
-
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
+    @extend_schema(
+        request=CoinWriteSerializer,
+        responses=CoinReadSerializer,
+        description="Полностью обновить монету (PUT) с загрузкой изображения"
+    )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @extend_schema(
+        request=CoinWriteSerializer,
+        responses=CoinReadSerializer,
+        description="Частично обновить монету (PATCH) с загрузкой изображения"
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
 
     def get_serializer_class(self):
         if self.action in ('create', 'update', 'partial_update'):

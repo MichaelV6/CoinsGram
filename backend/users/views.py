@@ -1,3 +1,4 @@
+
 from rest_framework import viewsets, permissions, mixins
 from django.contrib.auth import get_user_model
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -11,11 +12,6 @@ User = get_user_model()
 
 
 @extend_schema_view(
-    create=extend_schema(
-        request=UserSerializer,
-        responses={201: UserSerializer},
-        description="Регистрация нового пользователя"
-    ),
     list=extend_schema(
         responses=UserSerializer(many=True),
         description="Список всех пользователей (только для авторизованных)"
@@ -23,16 +19,6 @@ User = get_user_model()
     retrieve=extend_schema(
         responses=UserSerializer,
         description="Профиль пользователя"
-    ),
-    update=extend_schema(
-        request=UserSerializer,
-        responses=UserSerializer,
-        description="Полное обновление профиля"
-    ),
-    partial_update=extend_schema(
-        request=UserSerializer,
-        responses=UserSerializer,
-        description="Частичное обновление профиля"
     ),
     destroy=extend_schema(
         responses={204: OpenApiTypes.NONE},
@@ -42,20 +28,18 @@ User = get_user_model()
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    # 1) Парсеры для multipart/form-data:
     parser_classes = (MultiPartParser, FormParser)
 
-    # 2) Правильное использование extend_schema:
     @extend_schema(
-        request={ 'multipart/form-data': UserSerializer},
+        request=UserSerializer,
         responses={201: UserSerializer},
-        description="Регистрация пользователя с возможностью загрузить аватар"
+        description="Регистрация пользователя с возможностью загрузки аватара"
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
     @extend_schema(
-        request={ 'multipart/form-data': UserSerializer},
+        request=UserSerializer,
         responses=UserSerializer,
         description="Полное обновление профиля (PUT) с аватаром"
     )
@@ -63,14 +47,12 @@ class UserViewSet(viewsets.ModelViewSet):
         return super().update(request, *args, **kwargs)
 
     @extend_schema(
-        request={ 'multipart/form-data': UserSerializer},
+        request=UserSerializer,
         responses=UserSerializer,
         description="Частичное обновление профиля (PATCH) с аватаром"
     )
     def partial_update(self, request, *args, **kwargs):
         return super().partial_update(request, *args, **kwargs)
-
-
 
     def get_permissions(self):
         if self.action == 'create':

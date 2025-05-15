@@ -11,6 +11,7 @@ class TagSerializer(serializers.ModelSerializer):
 class CoinReadSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField()
     tags   = TagSerializer(many=True, read_only=True)
+    # Явно указываем, что это файл изображения
     image = serializers.ImageField(required=False)
 
     class Meta:
@@ -24,6 +25,7 @@ class CoinWriteSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(), many=True
     )
+    # Явно указываем, что это файл изображения
     image = serializers.ImageField(required=False)
 
     class Meta:

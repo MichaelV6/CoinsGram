@@ -142,3 +142,23 @@ REST_FRAMEWORK = {
         'rest_framework.filters.OrderingFilter',
     ],
 }
+
+# Настройки для drf-spectacular
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Coin Collector API',
+    'DESCRIPTION': 'API для коллекционирования монет',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'persistAuthorization': True,
+        'displayRequestDuration': True,
+    },
+    'EXTENSIONS': [
+        'users.spectacular_extensions.UserSerializerExtension',
+        'api.spectacular_extensions.CoinWriteSerializerExtension',
+    ],
+    # Включаем поддержку загрузки файлов
+    'COMPONENT_SPLIT_REQUEST': True,
+}

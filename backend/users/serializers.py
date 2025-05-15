@@ -3,8 +3,18 @@ from django.contrib.auth import get_user_model
 from .models import User, Subscription
 User = get_user_model()
 
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
+from .models import User, Subscription
+from drf_spectacular.utils import extend_schema_field
+from drf_spectacular.types import OpenApiTypes
+
+User = get_user_model()
+
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+    # Явно указываем, что avatar - это поле для загрузки файла
+    avatar = serializers.ImageField(required=False)
     
     class Meta:
         model = User
@@ -39,6 +49,11 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = ("user", "subscribed_to")
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
