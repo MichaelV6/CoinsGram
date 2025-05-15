@@ -75,6 +75,19 @@ class CoinWriteSerializer(serializers.ModelSerializer):
     
 class FavoriteSerializer(serializers.ModelSerializer):
     coin = serializers.PrimaryKeyRelatedField(queryset=Coin.objects.all(), required=True)
+    
     class Meta:
         model = Favorite
         fields = ('id', 'coin')
+        
+    def create(self, validated_data):
+        user = self.context['request'].user
+        coin = validated_data.get('coin')
+        
+        # Проверяем, нет ли уже такой записи
+        if Favorite.objects.filter(user=user, coin=coin).exists():
+            from api.exceptions import DuplicateFavoriteError
+            raise DuplicateFavoriteError()
+            
+        # Создаем запись в избранном
+        return Favorite.objects.create(user=user, coin=coin)

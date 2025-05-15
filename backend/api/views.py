@@ -1,36 +1,61 @@
-from rest_framework import viewsets, permissions, decorators
+from rest_framework import viewsets, permissions, decorators, status, mixins
 from rest_framework.response import Response
 from django.http import FileResponse
 from docx import Document
 from io import BytesIO
-from rest_framework import mixins, viewsets
-from drf_spectacular.utils import extend_schema
-from coins.models import Coin
-from tags.models import Tag
-from users.models import User
-from favorites.models import Favorite
-from .serializers import (
-    TagSerializer,
-    CoinReadSerializer, CoinWriteSerializer, FavoriteSerializer)
-from .filters import CoinFilter
-from users.serializers import UserSerializer
+from drf_spectacular.utils import (
+    extend_schema, extend_schema_view, OpenApiResponse, OpenApiTypes
+)
 from rest_framework.parsers import MultiPartParser, FormParser
 
+from coins.models import Coin
+from tags.models import Tag
+from favorites.models import Favorite
+from users.models import User
+from .serializers import (
+    TagSerializer,
+    CoinReadSerializer, CoinWriteSerializer,
+    FavoriteSerializer,
+)
+from .filters import CoinFilter
+from .exceptions import PermissionDeniedError
 
+
+# ---------------------------------------------------
+# Теги
+# ---------------------------------------------------
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
 
     def get_permissions(self):
-        # SAFE_METHODS = ('GET', 'HEAD', 'OPTIONS')
         if self.request.method in permissions.SAFE_METHODS:
-            # читать может любой
             return [permissions.AllowAny()]
-        # создавать/редактировать/удалять — только админ
         return [permissions.IsAdminUser()]
 
-# ----- Монеты -----
+
+# ---------------------------------------------------
+# Монеты
+# ---------------------------------------------------
+
+@extend_schema_view(
+    create=extend_schema(
+        request=CoinWriteSerializer,
+        responses=CoinReadSerializer,
+        description="Создать монету. Обязательно multipart/form-data с image."
+    ),
+    update=extend_schema(
+        request=CoinWriteSerializer,
+        responses=CoinReadSerializer,
+        description="Полностью обновить монету (PUT)."
+    ),
+    partial_update=extend_schema(
+        request=CoinWriteSerializer,
+        responses=CoinReadSerializer,
+        description="Частично обновить монету (PATCH)."
+    ),
+)
 class CoinViewSet(viewsets.ModelViewSet):
     queryset = Coin.objects.select_related('author').prefetch_related('tags')
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
@@ -40,53 +65,92 @@ class CoinViewSet(viewsets.ModelViewSet):
     ordering_fields = ('estimated_value', 'pub_date')
 
     @extend_schema(
-        request={
-            'multipart/form-data': CoinWriteSerializer
-        },
-        responses=CoinReadSerializer
+        request={'multipart/form-data': CoinWriteSerializer},
+        responses=CoinReadSerializer,
+        description="Создать монету с загрузкой изображения"
     )
+
+
     def create(self, request, *args, **kwargs):
-        # Исправляем для правильной обработки multipart/form-data
-        if not request.FILES.get('image'):
-            return Response(
-                {'error': 'Изображение монеты обязательно'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
         return super().create(request, *args, **kwargs)
 
+
     def get_serializer_class(self):
-        if self.action in ('POST', 'PUT', 'PATCH'):
+        if self.action in ('create', 'update', 'partial_update'):
             return CoinWriteSerializer
         return CoinReadSerializer
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
-        
+
     def perform_update(self, serializer):
-        # Проверяем, является ли пользователь автором или админом
         coin = self.get_object()
-        if not self.request.user.is_staff and coin.author != self.request.user:
-            raise PermissionDeniedError("Вы можете редактировать только свои монеты")
+        user = self.request.user
+        if not (user.is_staff or coin.author == user):
+            raise PermissionDeniedError("Редактировать можно лишь свои монеты")
         serializer.save()
-        
+
     def perform_destroy(self, instance):
-        # Проверяем права на удаление
-        if not self.request.user.is_staff and instance.author != self.request.user:
-            raise PermissionDeniedError("Вы можете удалять только свои монеты")
+        user = self.request.user
+        if not (user.is_staff or instance.author == user):
+            raise PermissionDeniedError("Удалять можно лишь свои монеты")
         instance.delete()
 
-# ----- Избранное -----
-class FavoriteViewSet(mixins.CreateModelMixin,
-                     mixins.ListModelMixin,
-                     mixins.DestroyModelMixin,
-                     viewsets.GenericViewSet):
-    permission_classes = (permissions.IsAuthenticated,)
+
+# ---------------------------------------------------
+# Избранное
+# ---------------------------------------------------
+
+@extend_schema_view(
+    list=extend_schema(
+        responses=CoinReadSerializer(many=True),
+        description="Список монет в избранном текущего пользователя"
+    ),
+    create=extend_schema(
+        request=FavoriteSerializer,
+        responses={201: FavoriteSerializer},
+        description="Добавить монету в избранное"
+    ),
+    destroy=extend_schema(
+        responses={204: OpenApiTypes.NONE},
+        description="Удалить монету из избранного"
+    ),
+    download=extend_schema(
+        request=None,
+        responses=OpenApiResponse(
+            response=OpenApiTypes.BINARY,
+            description="Word-файл со списком избранного"
+        ),
+    ),
+)
+class FavoriteViewSet(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    queryset = Favorite.objects.all()
     serializer_class = FavoriteSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        # swagger_fake_view нужен, чтобы spectacular не вывалился на анониме
+        if getattr(self, "swagger_fake_view", False):
+            return Favorite.objects.none()
+        return Favorite.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    def perform_destroy(self, instance):
+        user = self.request.user
+        if not (user.is_staff or instance.user == user):
+            raise PermissionDeniedError("Удалять можно лишь свои записи избранного")
+        instance.delete()
 
     def list(self, request, *args, **kwargs):
         coins = Coin.objects.filter(in_favorites__user=request.user)
-        serializer = CoinReadSerializer(coins, many=True)
-        return Response(serializer.data)
+        return Response(CoinReadSerializer(coins, many=True).data)
 
     @decorators.action(detail=False, methods=['get'])
     def download(self, request):
@@ -100,6 +164,7 @@ class FavoriteViewSet(mixins.CreateModelMixin,
         hdr[2].text = 'Теги'
         hdr[3].text = 'Цена, ₽'
         hdr[4].text = 'Продавец'
+
         for i, coin in enumerate(coins, start=1):
             cells = table.add_row().cells
             cells[0].text = str(i)
@@ -107,58 +172,8 @@ class FavoriteViewSet(mixins.CreateModelMixin,
             cells[2].text = ', '.join(t.name for t in coin.tags.all())
             cells[3].text = str(coin.estimated_value)
             cells[4].text = coin.author.username
+
         buf = BytesIO()
         doc.save(buf)
         buf.seek(0)
-        return FileResponse(
-            buf,
-            as_attachment=True,
-            filename='favorites.docx'
-        )
-    
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    
-    def get_permissions(self):
-        if self.action in ['create']:
-            # Любой может создать пользователя (регистрация)
-            return [permissions.AllowAny()]
-        elif self.action in ['update', 'partial_update', 'destroy']:
-            # Только владелец аккаунта или админ может изменять/удалять
-            return [permissions.IsAuthenticated(), IsOwnerOrAdmin()]
-        else:
-            # Для просмотра списка пользователей нужна авторизация
-            return [permissions.IsAuthenticated()]
-
-    def perform_update(self, serializer):
-        # Проверяем права на обновление
-        if not self.request.user.is_staff and self.request.user.id != self.kwargs.get('pk'):
-            raise PermissionDeniedError("Вы можете редактировать только свой профиль")
-        serializer.save()
-        
-    def perform_destroy(self, instance):
-        # Проверяем права на удаление
-        if not self.request.user.is_staff and self.request.user.id != instance.id:
-            raise PermissionDeniedError("Вы можете удалять только свой профиль")
-        instance.delete()
-
-# Добавьте классы разрешений
-class IsOwnerOrAdmin(permissions.BasePermission):
-    """
-    Разрешение для проверки владельца ресурса или администратора
-    """
-    def has_object_permission(self, request, view, obj):
-        # Администраторы могут делать всё
-        if request.user.is_staff:
-            return True
-            
-        # Проверяем является ли пользователь владельцем
-        if hasattr(obj, 'user'):
-            return obj.user == request.user
-        elif hasattr(obj, 'author'):
-            return obj.author == request.user
-        # Для профиля пользователя
-        elif isinstance(obj, User):
-            return obj.id == request.user.id
-        return False
+        return FileResponse(buf, as_attachment=True, filename='favorites.docx')
