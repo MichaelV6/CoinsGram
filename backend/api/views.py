@@ -7,13 +7,16 @@ from rest_framework import mixins, viewsets
 from drf_spectacular.utils import extend_schema
 from coins.models import Coin
 from tags.models import Tag
+from users.models import User
 from favorites.models import Favorite
 from .serializers import (
     TagSerializer,
-    CoinReadSerializer, CoinWriteSerializer, FavoriteSerializer
-)
+    CoinReadSerializer, CoinWriteSerializer, FavoriteSerializer)
 from .filters import CoinFilter
+from users.serializers import UserSerializer
 from rest_framework.parsers import MultiPartParser, FormParser
+
+
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
@@ -42,17 +45,35 @@ class CoinViewSet(viewsets.ModelViewSet):
         },
         responses=CoinReadSerializer
     )
-    
     def create(self, request, *args, **kwargs):
+        # Исправляем для правильной обработки multipart/form-data
+        if not request.FILES.get('image'):
+            return Response(
+                {'error': 'Изображение монеты обязательно'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         return super().create(request, *args, **kwargs)
 
     def get_serializer_class(self):
-        if self.request.method in ('POST', 'PUT', 'PATCH'):
+        if self.action in ('POST', 'PUT', 'PATCH'):
             return CoinWriteSerializer
         return CoinReadSerializer
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+        
+    def perform_update(self, serializer):
+        # Проверяем, является ли пользователь автором или админом
+        coin = self.get_object()
+        if not self.request.user.is_staff and coin.author != self.request.user:
+            raise PermissionDeniedError("Вы можете редактировать только свои монеты")
+        serializer.save()
+        
+    def perform_destroy(self, instance):
+        # Проверяем права на удаление
+        if not self.request.user.is_staff and instance.author != self.request.user:
+            raise PermissionDeniedError("Вы можете удалять только свои монеты")
+        instance.delete()
 
 # ----- Избранное -----
 class FavoriteViewSet(mixins.CreateModelMixin,
@@ -95,8 +116,49 @@ class FavoriteViewSet(mixins.CreateModelMixin,
             filename='favorites.docx'
         )
     
-class IsAdminOrReadOnly(permissions.BasePermission):
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    
+    def get_permissions(self):
+        if self.action in ['create']:
+            # Любой может создать пользователя (регистрация)
+            return [permissions.AllowAny()]
+        elif self.action in ['update', 'partial_update', 'destroy']:
+            # Только владелец аккаунта или админ может изменять/удалять
+            return [permissions.IsAuthenticated(), IsOwnerOrAdmin()]
+        else:
+            # Для просмотра списка пользователей нужна авторизация
+            return [permissions.IsAuthenticated()]
+
+    def perform_update(self, serializer):
+        # Проверяем права на обновление
+        if not self.request.user.is_staff and self.request.user.id != self.kwargs.get('pk'):
+            raise PermissionDeniedError("Вы можете редактировать только свой профиль")
+        serializer.save()
+        
+    def perform_destroy(self, instance):
+        # Проверяем права на удаление
+        if not self.request.user.is_staff and self.request.user.id != instance.id:
+            raise PermissionDeniedError("Вы можете удалять только свой профиль")
+        instance.delete()
+
+# Добавьте классы разрешений
+class IsOwnerOrAdmin(permissions.BasePermission):
+    """
+    Разрешение для проверки владельца ресурса или администратора
+    """
+    def has_object_permission(self, request, view, obj):
+        # Администраторы могут делать всё
+        if request.user.is_staff:
             return True
-        return request.user and request.user.is_staff
+            
+        # Проверяем является ли пользователь владельцем
+        if hasattr(obj, 'user'):
+            return obj.user == request.user
+        elif hasattr(obj, 'author'):
+            return obj.author == request.user
+        # Для профиля пользователя
+        elif isinstance(obj, User):
+            return obj.id == request.user.id
+        return False
