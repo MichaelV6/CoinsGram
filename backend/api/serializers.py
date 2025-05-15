@@ -1,0 +1,54 @@
+from rest_framework import serializers
+from coins.models import Coin
+from tags.models import Tag
+from favorites.models import Favorite
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = Tag
+        fields = ('id', 'name', 'color', 'slug')
+
+class CoinReadSerializer(serializers.ModelSerializer):
+    author = serializers.StringRelatedField()
+    tags   = TagSerializer(many=True, read_only=True)
+    image = serializers.ImageField(required=False)
+
+    class Meta:
+        model  = Coin
+        fields = (
+            'id', 'author', 'name', 'description',
+            'estimated_value', 'tags', 'image', 'pub_date'
+        )
+
+class CoinWriteSerializer(serializers.ModelSerializer):
+    tags  = serializers.PrimaryKeyRelatedField(
+        queryset=Tag.objects.all(), many=True
+    )
+    image = serializers.ImageField(required=False)
+
+    class Meta:
+        model   = Coin
+        exclude = ('author', 'pub_date')
+
+    def create(self, validated_data):
+        tags = validated_data.pop('tags', [])
+        coin = Coin.objects.create(
+            **validated_data,
+        )
+        coin.tags.set(tags)
+        return coin
+
+    def update(self, instance, validated_data):
+        tags = validated_data.pop('tags', None)
+        for attr, val in validated_data.items():
+            setattr(instance, attr, val)
+        if tags is not None:
+            instance.tags.set(tags)
+        instance.save()
+        return instance
+    
+class FavoriteSerializer(serializers.ModelSerializer):
+    coin = serializers.PrimaryKeyRelatedField(queryset=Coin.objects.all(), required=True)
+    class Meta:
+        model = Favorite
+        fields = ('id', 'coin')
