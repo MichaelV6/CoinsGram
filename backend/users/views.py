@@ -2,12 +2,14 @@
 from rest_framework import viewsets, permissions, mixins
 from django.contrib.auth import get_user_model
 from rest_framework.parsers import MultiPartParser, FormParser
-from drf_spectacular.utils import extend_schema, OpenApiTypes, extend_schema_view
-
-from .serializers import UserSerializer, SubscriptionSerializer
+from drf_spectacular.utils import extend_schema, OpenApiTypes, extend_schema_view, OpenApiResponse
+from rest_framework.permissions import IsAuthenticated
+from .serializers import UserSerializer, SubscriptionSerializer, SetPasswordSerializer
 from .models import Subscription
 from api.exceptions import PermissionDeniedError
-
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.decorators import action
 User = get_user_model()
 
 
@@ -29,6 +31,26 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     parser_classes = (MultiPartParser, FormParser)
+
+    @extend_schema(
+        request=SetPasswordSerializer,
+        responses={
+          204: OpenApiTypes.NONE,
+          400: OpenApiResponse(description="Ошибка валидации")
+        },
+        description="Смена пароля текущего пользователя"
+    )
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated], url_path='set_password')
+    def set_password(self, request):
+        serializer = SetPasswordSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)    
+
 
     @extend_schema(
         request=UserSerializer,

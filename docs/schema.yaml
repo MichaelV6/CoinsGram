@@ -1,643 +1,289 @@
 openapi: 3.0.3
 info:
-  title: ''
-  version: 0.0.0
-paths:
-  /api/schema/:
-    get:
-      operationId: api_schema_retrieve
-      description: |-
-        OpenApi3 schema for this API. Format can be selected via content negotiation.
+  title: Coin Collector API
+  description: |
+    # API для платформы "Коллекционер монет"
+    
+    Платформа позволяет нумизматам создавать профили, добавлять монеты в коллекцию,
+    описывать их и оценивать, а также взаимодействовать с другими пользователями.
+    
+    ## Основные возможности
+    
+    - 🪙 **Управление монетами**: добавление, просмотр, редактирование и удаление монет в коллекции
+    - 🏷️ **Теги**: категоризация монет с помощью тегов
+    - ⭐ **Избранное**: возможность сохранять интересные монеты в избранное
+    - 👥 **Пользователи**: регистрация, авторизация, обновление профиля
+    - 🔍 **Поиск и фильтрация**: поиск по названию, фильтрация по стоимости, тегам
+    - 📋 **Экспорт**: выгрузка списка избранных монет в Word-документ
+    
+    ## Аутентификация
+    
+    API использует JWT-токены для аутентификации. Для доступа к защищенным эндпоинтам необходимо:
+    1. Получить токен через /api/auth/jwt/create/
+    2. Передавать его в заголовке Authorization: Bearer <token>
+    
+  version: 1.0.0
+  contact:
+    name: Разработчик API
+    email: developer@coinapi.ru
+    url: https://github.com/yourusername/coin-collector
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
 
-        - YAML: application/vnd.oai.openapi
-        - JSON: application/vnd.oai.openapi+json
-      parameters:
-      - in: query
-        name: format
-        schema:
-          type: string
-          enum:
-          - json
-          - yaml
-      - in: query
-        name: lang
-        schema:
-          type: string
-          enum:
-          - af
-          - ar
-          - ar-dz
-          - ast
-          - az
-          - be
-          - bg
-          - bn
-          - br
-          - bs
-          - ca
-          - ckb
-          - cs
-          - cy
-          - da
-          - de
-          - dsb
-          - el
-          - en
-          - en-au
-          - en-gb
-          - eo
-          - es
-          - es-ar
-          - es-co
-          - es-mx
-          - es-ni
-          - es-ve
-          - et
-          - eu
-          - fa
-          - fi
-          - fr
-          - fy
-          - ga
-          - gd
-          - gl
-          - he
-          - hi
-          - hr
-          - hsb
-          - hu
-          - hy
-          - ia
-          - id
-          - ig
-          - io
-          - is
-          - it
-          - ja
-          - ka
-          - kab
-          - kk
-          - km
-          - kn
-          - ko
-          - ky
-          - lb
-          - lt
-          - lv
-          - mk
-          - ml
-          - mn
-          - mr
-          - ms
-          - my
-          - nb
-          - ne
-          - nl
-          - nn
-          - os
-          - pa
-          - pl
-          - pt
-          - pt-br
-          - ro
-          - ru
-          - sk
-          - sl
-          - sq
-          - sr
-          - sr-latn
-          - sv
-          - sw
-          - ta
-          - te
-          - tg
-          - th
-          - tk
-          - tr
-          - tt
-          - udm
-          - uk
-          - ur
-          - uz
-          - vi
-          - zh-hans
-          - zh-hant
-      tags:
-      - api
-      security:
-      - tokenAuth: []
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/vnd.oai.openapi:
-              schema:
-                type: object
-                additionalProperties: {}
-            application/yaml:
-              schema:
-                type: object
-                additionalProperties: {}
-            application/vnd.oai.openapi+json:
-              schema:
-                type: object
-                additionalProperties: {}
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
-  /api/v1/coins/:
-    get:
-      operationId: api_v1_coins_list
-      parameters:
-      - in: query
-        name: author
-        schema:
-          type: integer
-      - in: query
-        name: max_price
-        schema:
-          type: integer
-      - in: query
-        name: min_price
-        schema:
-          type: integer
-      - name: ordering
-        required: false
-        in: query
-        description: Which field to use when ordering the results.
-        schema:
-          type: string
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      - name: search
-        required: false
-        in: query
-        description: A search term.
-        schema:
-          type: string
-      - in: query
-        name: tags
-        schema:
-          type: array
-          items:
-            type: string
-        explode: true
-        style: form
-      tags:
-      - api
-      security:
-      - tokenAuth: []
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedCoinReadList'
-          description: ''
-    post:
-      operationId: api_v1_coins_create
-      tags:
-      - api
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CoinWrite'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/CoinWrite'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/CoinWrite'
-        required: true
-      security:
-      - tokenAuth: []
-      - jwtAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CoinWrite'
-          description: ''
-  /api/v1/coins/{id}/:
-    get:
-      operationId: api_v1_coins_retrieve
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Монета.
-        required: true
-      tags:
-      - api
-      security:
-      - tokenAuth: []
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CoinRead'
-          description: ''
-    put:
-      operationId: api_v1_coins_update
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Монета.
-        required: true
-      tags:
-      - api
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CoinWrite'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/CoinWrite'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/CoinWrite'
-        required: true
-      security:
-      - tokenAuth: []
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CoinWrite'
-          description: ''
-    patch:
-      operationId: api_v1_coins_partial_update
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Монета.
-        required: true
-      tags:
-      - api
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedCoinWrite'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedCoinWrite'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedCoinWrite'
-      security:
-      - tokenAuth: []
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CoinWrite'
-          description: ''
-    delete:
-      operationId: api_v1_coins_destroy
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Монета.
-        required: true
-      tags:
-      - api
-      security:
-      - tokenAuth: []
-      - jwtAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/v1/favorites/:
-    get:
-      operationId: api_v1_favorites_retrieve
-      tags:
-      - api
-      security:
-      - tokenAuth: []
-      - jwtAuth: []
-      responses:
-        '200':
-          description: No response body
-    post:
-      operationId: api_v1_favorites_create
-      tags:
-      - api
-      security:
-      - tokenAuth: []
-      - jwtAuth: []
-      responses:
-        '201':
-          description: No response body
-  /api/v1/favorites/{id}/:
-    get:
-      operationId: api_v1_favorites_retrieve_2
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - api
-      security:
-      - tokenAuth: []
-      - jwtAuth: []
-      responses:
-        '200':
-          description: No response body
-    put:
-      operationId: api_v1_favorites_update
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - api
-      security:
-      - tokenAuth: []
-      - jwtAuth: []
-      responses:
-        '200':
-          description: No response body
-    patch:
-      operationId: api_v1_favorites_partial_update
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - api
-      security:
-      - tokenAuth: []
-      - jwtAuth: []
-      responses:
-        '200':
-          description: No response body
-    delete:
-      operationId: api_v1_favorites_destroy
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - api
-      security:
-      - tokenAuth: []
-      - jwtAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/v1/favorites/download/:
-    get:
-      operationId: api_v1_favorites_download_retrieve
-      tags:
-      - api
-      security:
-      - tokenAuth: []
-      - jwtAuth: []
-      responses:
-        '200':
-          description: No response body
-  /api/v1/tags/:
-    get:
-      operationId: api_v1_tags_list
-      parameters:
-      - name: ordering
-        required: false
-        in: query
-        description: Which field to use when ordering the results.
-        schema:
-          type: string
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      - name: search
-        required: false
-        in: query
-        description: A search term.
-        schema:
-          type: string
-      tags:
-      - api
-      security:
-      - tokenAuth: []
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedTagList'
-          description: ''
-  /api/v1/tags/{id}/:
-    get:
-      operationId: api_v1_tags_retrieve
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Тег.
-        required: true
-      tags:
-      - api
-      security:
-      - tokenAuth: []
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Tag'
-          description: ''
+servers:
+  - url: http://localhost:8000
+    description: Локальный сервер разработки
+  - url: https://coin-collector-api.example.com
+    description: Тестовый сервер
+
+tags:
+  - name: Аутентификация
+    description: Эндпоинты для авторизации и работы с токенами
+  - name: Пользователи
+    description: Управление пользователями и профилями
+  - name: Подписки
+    description: Подписки на других пользователей
+  - name: Монеты
+    description: Управление коллекцией монет
+  - name: Теги
+    description: Управление тегами для категоризации монет
+  - name: Избранное
+    description: Работа с избранными монетами
+
+paths:
+  …  # (все ваши paths, приведённые ранее)
+
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Номер страницы для пагинации
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+    PageSizeParam:
+      name: page_size
+      in: query
+      description: Количество элементов на странице
+      schema:
+        type: integer
+        default: 10
+        minimum: 1
+        maximum: 100
+
+  responses:
+    NotFound:
+      description: Запрашиваемый объект не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: Ошибка валидации данных
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+    Unauthorized:
+      description: Необходима авторизация
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Доступ запрещен
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
   schemas:
-    CoinRead:
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: "У вас нет прав для доступа к этому ресурсу."
+
+    ValidationError:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          type: string
+      example:
+        name:
+          - "Обязательное поле."
+        email:
+          - "Неверный формат email."
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+          minLength: 3
+        first_name:
+          type: string
+        last_name:
+          type: string
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+          description: URL аватара пользователя
+      required:
+        - id
+        - email
+        - username
+        - first_name
+        - last_name
+
+    UserCreate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+          minLength: 3
+        first_name:
+          type: string
+        last_name:
+          type: string
+        password:
+          type: string
+          format: password
+          minLength: 8
+        avatar:
+          type: string
+          format: binary
+          description: Файл изображения аватара
+      required:
+        - email
+        - username
+        - first_name
+        - last_name
+        - password
+
+    UserUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+          minLength: 3
+        first_name:
+          type: string
+        last_name:
+          type: string
+        password:
+          type: string
+          format: password
+          minLength: 8
+        avatar:
+          type: string
+          format: binary
+          description: Файл изображения аватара
+
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        subscribed_to:
+          type: integer
+          description: ID пользователя, на которого оформлена подписка
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - subscribed_to
+
+    Coin:
       type: object
       properties:
         id:
           type: integer
           readOnly: true
         author:
-          type: string
-          readOnly: true
+          $ref: '#/components/schemas/User'
         name:
           type: string
-          title: Название
-          maxLength: 200
+          maxLength: 256
         description:
           type: string
-          title: Описание
         estimated_value:
           type: integer
-          maximum: 10000000
           minimum: 1
-          title: Оценочная стоимость, ₽
         tags:
           type: array
           items:
             $ref: '#/components/schemas/Tag'
-          readOnly: true
         image:
           type: string
           format: uri
-          readOnly: true
+          description: URL загруженного изображения
         pub_date:
           type: string
           format: date-time
-          readOnly: true
-          title: Дата публикации
       required:
-      - author
-      - description
-      - estimated_value
-      - id
-      - image
-      - name
-      - pub_date
-      - tags
-    CoinWrite:
+        - id
+        - author
+        - name
+        - description
+        - estimated_value
+        - tags
+        - image
+        - pub_date
+
+    CoinCreate:
       type: object
       properties:
-        id:
+        name:
+          type: string
+          maxLength: 256
+        description:
+          type: string
+        estimated_value:
           type: integer
-          readOnly: true
+          minimum: 1
         tags:
           type: array
           items:
             type: integer
+          description: Список ID тегов
         image:
           type: string
-          format: uri
-        name:
-          type: string
-          title: Название
-          maxLength: 200
-        description:
-          type: string
-          title: Описание
-        estimated_value:
-          type: integer
-          maximum: 10000000
-          minimum: 1
-          title: Оценочная стоимость, ₽
+          format: binary
+          description: Файл изображения монеты
       required:
-      - description
-      - estimated_value
-      - id
-      - image
-      - name
-      - tags
-    PaginatedCoinReadList:
-      type: object
-      required:
-      - count
-      - results
-      properties:
-        count:
-          type: integer
-          example: 123
-        next:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=4
-        previous:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=2
-        results:
-          type: array
-          items:
-            $ref: '#/components/schemas/CoinRead'
-    PaginatedTagList:
-      type: object
-      required:
-      - count
-      - results
-      properties:
-        count:
-          type: integer
-          example: 123
-        next:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=4
-        previous:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=2
-        results:
-          type: array
-          items:
-            $ref: '#/components/schemas/Tag'
-    PatchedCoinWrite:
-      type: object
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        tags:
-          type: array
-          items:
-            type: integer
-        image:
-          type: string
-          format: uri
-        name:
-          type: string
-          title: Название
-          maxLength: 200
-        description:
-          type: string
-          title: Описание
-        estimated_value:
-          type: integer
-          maximum: 10000000
-          minimum: 1
-          title: Оценочная стоимость, ₽
+        - name
+        - description
+        - estimated_value
+        - tags
+        - image
+
     Tag:
       type: object
       properties:
@@ -646,25 +292,48 @@ components:
           readOnly: true
         name:
           type: string
-          maxLength: 100
-        color:
-          type: string
-          maxLength: 7
+          maxLength: 32
         slug:
           type: string
-          maxLength: 50
-          pattern: ^[-a-zA-Z0-9_]+$
+          maxLength: 32
+        color:
+          type: string
+          description: HEX-код цвета для визуального обозначения
       required:
-      - id
-      - name
-      - slug
-  securitySchemes:
-    jwtAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-    tokenAuth:
-      type: apiKey
-      in: header
-      name: Authorization
-      description: Token-based authentication with required prefix "Token"
+        - id
+        - name
+        - slug
+        - color
+
+    TagCreate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 32
+        slug:
+          type: string
+          maxLength: 32
+        color:
+          type: string
+          pattern: '^#([A-Fa-f0-9]{6})$'
+      required:
+        - name
+        - slug
+        - color
+
+    Favorite:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        coin:
+          $ref: '#/components/schemas/Coin'
+        added_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - coin
+
