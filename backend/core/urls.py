@@ -1,23 +1,54 @@
+# core/urls.py
+
+import os
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView
-from drf_spectacular.views import SpectacularSwaggerView
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
-urlpatterns = [
-    path('api/auth/jwt/create/', TokenObtainPairView.as_view(), name='jwt-create'),
-    # обновить access по refresh-токену
-    path('api/auth/jwt/refresh/', TokenRefreshView.as_view(), name='jwt-refresh'),
-    path('admin/', admin.site.urls),
-    path('api/', include('api.urls')),
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/docs/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
-    path('api/docs/swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+from django.views.static import serve
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+urlpatterns = [
+    # JWT endpoints
+    path('api/auth/jwt/create/', TokenObtainPairView.as_view(), name='jwt-create'),
+    path('api/auth/jwt/refresh/', TokenRefreshView.as_view(), name='jwt-refresh'),
+
+    # Admin
+    path('admin/', admin.site.urls),
+
+    # Your API
+    path('api/', include('api.urls')),
+
+    # Serve your custom OpenAPI schema
+    path(
+        'api/schema/',
+        serve,
+        {
+            'path': 'schema.yaml',
+            'document_root': os.path.join(settings.BASE_DIR, 'docs'),
+        },
+        name='schema'
+    ),
+
+
+    path(
+        'api/docs/',
+        SpectacularRedocView.as_view(
+            url='/api/schema/',
+            template_name='redoc.html'     
+        ),
+        name='redoc'
+    ),
+
+
+    path(
+        'api/docs/swagger/',
+        SpectacularSwaggerView.as_view(
+            url='/api/schema/'
+        ),
+        name='swagger-ui'
+    ),
 ]
 
 if settings.DEBUG:

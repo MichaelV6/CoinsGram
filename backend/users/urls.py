@@ -3,6 +3,5 @@ from .views import UserViewSet, SubscriptionViewSet
 
 router = DefaultRouter()
 router.register("", SubscriptionViewSet, basename="subscription")
-router.register("users", UserViewSet, basename="user")  # Измените URL-префикс
-
+router.register("users", UserViewSet, basename="user")  
 urlpatterns = router.urls

@@ -9,7 +9,7 @@ class UserSerializerExtension(OpenApiSerializerExtension):
     def map_serializer(self, auto_schema, direction):
         result = auto_schema.resolve_serializer(self.target, direction, bypass_extensions=True)
         
-        # Явно указываем, что avatar это поле для загрузки файла в формате OpenAPI
+
         if 'avatar' in result['properties']:
             result['properties']['avatar'] = {
                 'type': 'string',

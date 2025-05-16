@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        /* Стиль для header */
+        .custom-header {
+            background-color: #40689f;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+        }
+        
+        .custom-header h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.8em;
+            margin: 0;
+        }
+        
+        .custom-header p {
+            font-family: 'Roboto', sans-serif;
+            font-size: 1em;
+            margin: 5px 0 0 0;
+        }
+        
+        /* Кастомизация логотипа и favicon */
+        .logo {
+            height: 40px;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+        
+        /* Кастомизация для ReDoc */
+        redoc {
+            display: block;
+        }
+    </style>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="svg" href="{% static 'coins/logo.svg' %}" sizes="32x32" />
+</head>
+<body>
+    <!-- Кастомный заголовок -->
+    <div class="custom-header">
+        <h1><img src="{% static 'coins/logo.svg' %}" alt="CoinsGram Logo" class="logo" sizes="34x34">API для коллекционеров монет</h1>
+        <p>Документация API для платформы обмена и коллекционирования монет</p>
+        <p><h1>Для УДОБНОЙ проверки API перейдите по <a href="http://127.0.0.1:8000/api/docs/swagger/" target="_blank">Swagger UI</a></h1></p>
+    </div>
+    
+    <!-- ReDoc контейнер -->
+    <redoc spec-url="{{ schema_url }}"></redoc>
+    
+    <!-- Скрипт ReDoc -->
+    <script src="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"></script>
+    
+    <script>
+        // Инициализация ReDoc с пользовательскими настройками
+        Redoc.init('{{ schema_url }}', {{ redoc_settings|safe }}, document.getElementsByTagName('redoc')[0]);
+    </script>
+</body>
+</html>

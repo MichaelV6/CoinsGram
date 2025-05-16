@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, decorators, status, mixins
 from rest_framework.response import Response
-from django.http import FileResponse
+from django.http import FileResponse, HttpResponse
+from rest_framework.decorators import action
 from docx import Document
 from io import BytesIO
 from drf_spectacular.utils import (
@@ -136,7 +137,6 @@ class CoinViewSet(viewsets.ModelViewSet):
 class FavoriteViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
-    mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
     queryset = Favorite.objects.all()
@@ -152,12 +152,23 @@ class FavoriteViewSet(
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-    def perform_destroy(self, instance):
-        user = self.request.user
-        if not (user.is_staff or instance.user == user):
-            raise PermissionDeniedError("Удалять можно лишь свои записи избранного")
-        instance.delete()
+    @action(detail=False, methods=['delete'], url_path='by_coin')
 
+    def delete_by_coin(self, request):
+        coin_id = request.query_params.get('coin')
+        if not coin_id:
+            return Response(
+                {'detail': 'coin обязателен как query param'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        instance = Favorite.objects.filter(
+            user=request.user,
+            coin_id=coin_id
+        ).first()
+        if not instance:
+            return Response({'detail': 'Избранное не найдено'}, status=status.HTTP_404_NOT_FOUND)
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
     def list(self, request, *args, **kwargs):
         coins = Coin.objects.filter(in_favorites__user=request.user)
         return Response(CoinReadSerializer(coins, many=True).data)
@@ -186,4 +197,9 @@ class FavoriteViewSet(
         buf = BytesIO()
         doc.save(buf)
         buf.seek(0)
-        return FileResponse(buf, as_attachment=True, filename='favorites.docx')
+        response = HttpResponse(
+            buf.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+        response['Content-Disposition'] = 'attachment; filename="favorites.docx"'
+        return response

@@ -51,15 +51,11 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = Subscription
         fields = ("user", "subscribed_to")
-
-class SubscriptionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Subscription
-        fields = ("user", "subscribed_to")
-
+        read_only_fields = ("user",)  
 
 class SetPasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(write_only=True)

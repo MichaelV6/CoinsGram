@@ -2,7 +2,7 @@
 from rest_framework import viewsets, permissions, mixins
 from django.contrib.auth import get_user_model
 from rest_framework.parsers import MultiPartParser, FormParser
-from drf_spectacular.utils import extend_schema, OpenApiTypes, extend_schema_view, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiTypes, extend_schema_view, OpenApiResponse, OpenApiParameter
 from rest_framework.permissions import IsAuthenticated
 from .serializers import UserSerializer, SubscriptionSerializer, SetPasswordSerializer
 from .models import Subscription
@@ -105,10 +105,10 @@ class UserViewSet(viewsets.ModelViewSet):
         description="Отписаться от пользователя"
     ),
 )
+
 class SubscriptionViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
-    mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
     queryset = Subscription.objects.all()
@@ -123,20 +123,33 @@ class SubscriptionViewSet(
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-    def perform_destroy(self, instance):
-        if instance.user != self.request.user and not self.request.user.is_staff:
-            raise PermissionDeniedError("Удалять можно лишь свои подписки")
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="subscribed_to",
+                description="ID пользователя, от которого нужно отписаться",
+                required=True,
+                type=int,
+                location=OpenApiParameter.QUERY,
+            ),
+        ],
+        responses={204: OpenApiTypes.NONE, 404: OpenApiResponse(description="Подписка не найдена")},
+        description="Удалить подписку по ID пользователя (subscribed_to) через query-параметр",
+        methods=["DELETE"]
+    )
+    @action(detail=False, methods=['delete'], url_path='by_user')
+    def delete_by_user(self, request):
+        subscribed_to_id = request.query_params.get('subscribed_to')
+        if not subscribed_to_id:
+            return Response(
+                {'detail': 'subscribed_to обязателен как query param'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        instance = Subscription.objects.filter(
+            user=request.user,
+            subscribed_to_id=subscribed_to_id
+        ).first()
+        if not instance:
+            return Response({'detail': 'Подписка не найдена'}, status=status.HTTP_404_NOT_FOUND)
         instance.delete()
-
-
-class IsOwnerOrAdmin(permissions.BasePermission):
-    def has_object_permission(self, request, view, obj):
-        if request.user.is_staff:
-            return True
-        # профиль пользователя
-        if isinstance(obj, User):
-            return obj.id == request.user.id
-        # подписка
-        if hasattr(obj, 'user'):
-            return obj.user == request.user
-        return False
+        return Response(status=status.HTTP_204_NO_CONTENT)

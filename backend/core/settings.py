@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'your-secret-key'
@@ -8,7 +9,7 @@ ALLOWED_HOSTS = []
 AUTH_USER_MODEL = "users.User"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 INSTALLED_APPS = [
-    # Django
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -16,17 +17,18 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'drf_spectacular',
-    # Сторонние
+   
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
     'django_filters',
-    # Собственные
+  
     'users',
     'tags',
     'coins',
     'favorites',
     'api',
+    'comments'
 ]
 
 MIDDLEWARE = [
@@ -44,7 +46,7 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -118,7 +120,10 @@ USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'static'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static_collected')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -143,12 +148,69 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Настройки для drf-spectacular
+
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Coin Collector API',
-    'DESCRIPTION': 'API для коллекционирования монет',
+    'DESCRIPTION': 'API для платформы коллекционирования монет',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    
+ 
+    'REDOC_TEMPLATE': 'redoc/custom_redoc.html',
+    
+
+    'REDOC_UI_SETTINGS': {
+        'hideDownloadButton': False,  
+        'hideHostname': False,
+        'disableSearch': False,      
+        'expandResponses': 'all',    
+        'jsonSampleExpandLevel': 3, 
+        'showExtensions': True,    
+        'sortPropsAlphabetically': False, 
+        'theme': {
+            'colors': {
+                'primary': {
+                    'main': '#40689f'  
+                },
+                'success': {
+                    'main': '#47b881'  
+                },
+                'warning': {
+                    'main': '#ffb020'  
+                },
+                'error': {
+                    'main': '#d14343'  
+                },
+                'text': {
+                    'primary': '#3e4348' 
+                },
+                'http': {
+                    'get': '#40689f',    
+                    'post': '#47b881',   
+                    'put': '#ffb020',     
+                    'delete': '#d14343'   
+                }
+            },
+            'typography': {
+                'fontSize': '16px',     
+                'lineHeight': '1.5',    
+                'fontFamily': 'Roboto, "Open Sans", sans-serif',  
+                'headings': {
+                    'fontFamily': 'Montserrat, sans-serif',
+                    'fontWeight': '600'
+                }
+            },
+            'sidebar': {
+                'backgroundColor': '#f8f9fa', 
+                'width': '320px'
+            },
+            'rightPanel': {
+                'backgroundColor': '#f0f0f0' 
+            }
+        }
+    },
+    
+
     'COMPONENT_SPLIT_REQUEST': True,
     'SWAGGER_UI_SETTINGS': {
         'deepLinking': True,
@@ -159,6 +221,10 @@ SPECTACULAR_SETTINGS = {
         'users.spectacular_extensions.UserSerializerExtension',
         'api.spectacular_extensions.CoinWriteSerializerExtension',
     ],
-    # Включаем поддержку загрузки файлов
-    'COMPONENT_SPLIT_REQUEST': True,
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+
 }

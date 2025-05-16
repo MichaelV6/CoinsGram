@@ -92,3 +92,93 @@ Traceback (most recent call last):
     return mark_safe(f'<img src="{obj.avatar.url}" width="50"/>')
 NameError: name 'mark_safe' is not defined
 ERROR 2025-05-15 17:44:26,388 basehttp "GET /admin/users/user/ HTTP/1.1" 500 414239
+ERROR 2025-05-15 23:45:10,724 log Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\django\template\response.py", line 111, in render
+    self.content = self.rendered_content
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\rest_framework\response.py", line 74, in rendered_content
+    ret = renderer.render(self.data, accepted_media_type, context)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\rest_framework\renderers.py", line 160, in render
+    template = self.resolve_template(template_names)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\rest_framework\renderers.py", line 170, in resolve_template
+    return loader.select_template(template_names)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: redoc/custom_redoc.html
+ERROR 2025-05-15 23:45:10,732 basehttp "GET /api/docs/ HTTP/1.1" 500 100396
+ERROR 2025-05-15 23:49:02,214 log Internal Server Error: /api/docs/
+Traceback (most recent call last):
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\django\core\handlers\base.py", line 220, in _get_response
+    response = response.render()
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\django\template\response.py", line 111, in render
+    self.content = self.rendered_content
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\rest_framework\response.py", line 74, in rendered_content
+    ret = renderer.render(self.data, accepted_media_type, context)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\rest_framework\renderers.py", line 160, in render
+    template = self.resolve_template(template_names)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\rest_framework\renderers.py", line 170, in resolve_template
+    return loader.select_template(template_names)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\django\template\loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+django.template.exceptions.TemplateDoesNotExist: redoc.html
+ERROR 2025-05-15 23:49:02,225 basehttp "GET /api/docs/ HTTP/1.1" 500 100123
+ERROR 2025-05-16 15:00:24,173 log Internal Server Error: /api/favorites/download/
+Traceback (most recent call last):
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Users\howdo\Desktop\CoinsGram\backend\api\views.py", line 189, in download
+    response = HttpResponse(
+NameError: name 'HttpResponse' is not defined
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\rest_framework\views.py", line 472, in handle_exception
+    response = exception_handler(exc, context)
+  File "C:\Users\howdo\Desktop\CoinsGram\backend\api\middleware.py", line 22, in custom_exception_handler
+    if isinstance(exc, django.core.exceptions.ValidationError):
+NameError: name 'django' is not defined
+ERROR 2025-05-16 15:00:24,177 basehttp "GET /api/favorites/download/ HTTP/1.1" 500 104511
+ERROR 2025-05-16 15:02:37,329 log Internal Server Error: /api/favorites/download/
+Traceback (most recent call last):
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Users\howdo\Desktop\CoinsGram\backend\api\views.py", line 189, in download
+    response = HttpResponse(
+NameError: name 'HttpResponse' is not defined
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\howdo\Desktop\CoinsGram\venv\lib\site-packages\rest_framework\views.py", line 472, in handle_exception
+    response = exception_handler(exc, context)
+  File "C:\Users\howdo\Desktop\CoinsGram\backend\api\middleware.py", line 22, in custom_exception_handler
+    if isinstance(exc, django.core.exceptions.ValidationError):
+NameError: name 'django' is not defined
+ERROR 2025-05-16 15:02:37,329 basehttp "GET /api/favorites/download/ HTTP/1.1" 500 104511

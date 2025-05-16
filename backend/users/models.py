@@ -5,11 +5,10 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.db import models
 
-# Если у тебя нет foodgram.constants — замени на число, например:
+
 MAX_USER_NAME = 150
 
-# Если нет утилиты image_compress, закомментируй её или добавь stub:
-# from your_project.utils import image_compress
+
 
 class User(AbstractUser):
     def upload_to(self, filename):

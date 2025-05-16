@@ -1,0 +1,955 @@
+openapi: 3.0.3
+info:
+  title: CoinsGram API
+  description: |
+    # API для платформы "Коллекционер монет"
+
+    Платформа позволяет нумизматам создавать профили, добавлять монеты в коллекцию,
+    описывать их и оценивать, а также взаимодействовать с другими пользователями.
+
+    ## Основные возможности
+
+    - 🪙 **Управление монетами**: добавление, просмотр, редактирование и удаление монет в коллекции
+    - 🏷️ **Теги**: категоризация монет с помощью тегов
+    - ⭐ **Избранное**: возможность сохранять интересные монеты в избранное
+    - 👥 **Пользователи**: регистрация, авторизация, обновление профиля
+    - 🔍 **Поиск и фильтрация**: поиск по названию, фильтрация по стоимости, тегам
+    - 📋 **Экспорт**: выгрузка списка избранных монет в Word-документ
+
+    ## Аутентификация
+
+    ❗❗❗ Мой API использует JWT-токены для аутентификации. Для доступа к защищённым эндпоинтам необходимо: ❗❗❗
+    1. Получить токен через /api/auth/jwt/create/ (Предварительно создать пользователя в api/users, если вы еще этого не сделали)
+    2. Передавать его в заголовке Authorization: Bearer <token> . Просто вставиить значение кода access из первого пункта в поле value (❗без кавычек)
+
+    ## Админка 
+
+    Чтобы создать админа, в консоли впишите команду в репозитории CoinsGram/backend следующее:
+    1. python manage.py createsuperuser
+    2. Введите предложенные данные
+    3. После успешной регистрации переходите по http://127.0.0.1:8000/admin и логиньтесь под соответсвующими данными.
+  version: 1.0.0
+  contact:
+    name: Выполнил :Михаил Волобуев ПИ01/23б
+    email: volobuev.m@edu.rea.ru
+    url: https://github.com/MichaelV6/CoinsGram
+
+servers:
+  - url: http://127.0.0.1:8000
+    description: Локальный сервер разработки
+
+tags:
+  - name: Аутентификация
+    description: Эндпоинты для авторизации и работы с токенами
+  - name: Пользователи
+    description: Управление пользователями и профилями
+  - name: Подписки
+    description: Подписки на других пользователей
+  - name: Монеты
+    description: Управление коллекцией монет
+  - name: Теги
+    description: Управление тегами для категоризации монет
+  - name: Избранное
+    description: Работа с избранными монетами
+  - name: Комментарии
+    description: Работа с комментариями к монетам
+
+paths:
+  /api/auth/jwt/create/:
+    post:
+      tags: [Аутентификация]
+      summary: Получить JWT-токен
+      description: Авторизация по email и паролю
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+                  refresh:
+                    type: string
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/users/:
+    get:
+      tags: [Пользователи]
+      summary: Получить список пользователей
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    post:
+      tags: [Пользователи]
+      summary: Зарегистрировать нового пользователя
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/users/{id}/:
+    get:
+      tags: [Пользователи]
+      summary: Получить профиль пользователя
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Профиль пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Пользователи]
+      summary: Обновить данные пользователя
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Обновленный профиль
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Пользователи]
+      summary: Удалить пользователя (самоудаление аккаунта)
+      description: Удаление своего аккаунта авторизованным пользователем
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Пользователь успешно удалён
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/users/set_password/:
+    post:
+      tags: [Пользователи]
+      summary: Сменить пароль пользователя
+      description: Смена пароля авторизованного пользователя
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                new_password:
+                  type: string
+                  minLength: 8
+                  format: password
+                current_password:
+                  type: string
+                  format: password
+              required:
+                - new_password
+                - current_password
+      responses:
+        '204':
+          description: Пароль успешно изменён
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/coins/:
+    get:
+      tags: [Монеты]
+      summary: Получить список монет
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Список монет
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Coin'
+    post:
+      tags: [Монеты]
+      summary: Добавить монету
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CoinCreate'
+      responses:
+        '201':
+          description: Монета добавлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Coin'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/coins/{id}/:
+    get:
+      tags: [Монеты]
+      summary: Получить детальную информацию о монете
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Информация о монете
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Coin'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Монеты]
+      summary: Обновить монету
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CoinCreate'
+      responses:
+        '200':
+          description: Монета обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Coin'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Монеты]
+      summary: Удалить монету
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Монета успешно удалена
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/tags/:
+    get:
+      tags: [Теги]
+      summary: Получить список тегов
+      responses:
+        '200':
+          description: Список тегов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+    post:
+      tags: [Теги]
+      summary: Добавить тег
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagCreate'
+      responses:
+        '201':
+          description: Тег добавлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/favorites/:
+    get:
+      tags: [Избранное]
+      summary: Получить список избранных монет
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Список избранных монет
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Favorite'
+    post:
+      tags: [Избранное]
+      summary: Добавить монету в избранное
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                coin:
+                  type: integer
+      responses:
+        '201':
+          description: Монета добавлена в избранное
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Favorite'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+
+  /api/favorites/by_coin/:
+    delete:
+      tags: [Избранное]
+      summary: Удалить монету из избранного по ID монеты
+      description: Удаляет монету из избранного по ID монеты через query-параметр `coin`
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: coin
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: ID монеты
+      responses:
+        '204':
+          description: Монета удалена из избранного
+        '400':
+          description: Не указан coin или некорректный запрос
+        '404':
+          description: Избранное не найдено
+        '401':
+          description: Не авторизован
+
+
+  /api/favorites/download:
+    get:
+      tags: [Избранное]
+      summary: Скачать избранные монеты в формате Word
+      description: Экспортирует избранные монеты пользователя в DOCX-файл (Word)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Файл DOCX с избранными монетами
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/subscriptions/:
+    get:
+      tags: [Подписки]
+      summary: Получить список подписок пользователя
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Список подписок
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Subscription'
+    post:
+      tags: [Подписки]
+      summary: Оформить подписку на пользователя
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subscribed_to:
+                  type: integer
+                  description: ID пользователя для подписки
+      responses:
+        '201':
+          description: Подписка оформлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/subscriptions/by_user/:
+    delete:
+      tags:
+        - Подписки
+      summary: Отписаться от пользователя по его ID
+      description: |
+        Удаляет подписку на пользователя по его идентификатору (subscribed_to).
+        Требуется query-параметр `subscribed_to` — ID пользователя, от которого нужно отписаться.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subscribed_to
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: ID пользователя, от которого нужно отписаться
+      responses:
+        '204':
+          description: Подписка удалена успешно
+        '400':
+          description: Не указан subscribed_to или некорректный запрос
+        '404':
+          description: Подписка не найдена
+        '401':
+          description: Не авторизован
+
+  /api/comments/:
+    post:
+      tags: [Комментарии]
+      summary: Добавить комментарий к монете
+      description: Только для аутентифицированных пользователей
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentCreate'
+      responses:
+        '201':
+          description: Комментарий успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/comments/{id}/:
+    get:
+      tags: [Комментарии]
+      summary: Получить комментарий по ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Комментарии]
+      summary: Удалить комментарий
+      description: Удаление комментария (только автор или админ)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Комментарий успешно удалён
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Комментарии]
+      summary: Редактировать комментарий
+      description: Только автор комментария или админ
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  description: Новый текст комментария
+              required:
+                - text
+      responses:
+        '200':
+          description: Комментарий успешно изменён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/comments/coin_comments/:
+    get:
+      tags: [Комментарии]
+      summary: Получить комментарии к монете
+      description: Получить все комментарии к указанной монете
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: coin_id
+          in: query
+          description: ID монеты
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешное получение комментариев
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
+        '400':
+          description: Не указан идентификатор монеты
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Необходимо указать coin_id"
+
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Номер страницы для пагинации
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+    PageSizeParam:
+      name: page_size
+      in: query
+      description: Количество элементов на странице
+      schema:
+        type: integer
+        default: 10
+        minimum: 1
+        maximum: 100
+  responses:
+    NotFound:
+      description: Запрашиваемый объект не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: Ошибка валидации данных
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+    Unauthorized:
+      description: Необходима авторизация
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Доступ запрещён
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: "У вас нет прав для доступа к этому ресурсу."
+    ValidationError:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          type: string
+      example:
+        name:
+          - "Обязательное поле."
+        email:
+          - "Неверный формат email."
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+          minLength: 3
+        first_name:
+          type: string
+        last_name:
+          type: string
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+          description: URL аватара пользователя
+      required:
+        - id
+        - email
+        - username
+        - first_name
+        - last_name
+    UserCreate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+          minLength: 3
+        first_name:
+          type: string
+        last_name:
+          type: string
+        password:
+          type: string
+          format: password
+          minLength: 8
+        avatar:
+          type: string
+          format: binary
+          description: Файл изображения аватара
+      required:
+        - email
+        - username
+        - first_name
+        - last_name
+        - password
+    UserUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+          minLength: 3
+        first_name:
+          type: string
+        last_name:
+          type: string
+        password:
+          type: string
+          format: password
+          minLength: 8
+        avatar:
+          type: string
+          format: binary
+          description: Файл изображения аватара
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        subscribed_to:
+          type: integer
+          description: ID пользователя, на которого оформлена подписка
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - subscribed_to
+    Coin:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        author:
+          $ref: '#/components/schemas/User'
+        name:
+          type: string
+          maxLength: 256
+        description:
+          type: string
+        estimated_value:
+          type: integer
+          minimum: 1
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        image:
+          type: string
+          format: uri
+          description: URL загруженного изображения
+        pub_date:
+          type: string
+          format: date-time
+      required:
+        - id
+        - author
+        - name
+        - description
+        - estimated_value
+        - tags
+        - image
+        - pub_date
+    CoinCreate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 256
+        description:
+          type: string
+        estimated_value:
+          type: integer
+          minimum: 1
+        tags:
+          type: array
+          items:
+            type: integer
+          description: Список ID тегов
+        image:
+          type: string
+          format: binary
+          description: Файл изображения монеты
+      required:
+        - name
+        - description
+        - estimated_value
+        - tags
+        - image
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 32
+        slug:
+          type: string
+          maxLength: 32
+        color:
+          type: string
+          description: HEX-код цвета для визуального обозначения
+      required:
+        - id
+        - name
+        - slug
+        - color
+    TagCreate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 32
+        slug:
+          type: string
+          maxLength: 32
+        color:
+          type: string
+          pattern: '^#([A-Fa-f0-9]{6})$'
+      required:
+        - name
+        - slug
+        - color
+    Favorite:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        coin:
+          $ref: '#/components/schemas/Coin'
+        added_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - coin
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        author:
+          type: string
+          description: Имя пользователя автора комментария
+        text:
+          type: string
+          description: Текст комментария
+        created_at:
+          type: string
+          format: date-time
+          description: Дата и время создания комментария
+      required:
+        - id
+        - author
+        - text
+        - created_at
+    CommentCreate:
+      type: object
+      properties:
+        coin:
+          type: integer
+          description: ID монеты, к которой добавляется комментарий
+        text:
+          type: string
+          description: Текст комментария
+      required:
+        - coin
+        - text
