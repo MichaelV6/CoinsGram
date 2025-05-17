@@ -19,7 +19,7 @@ class CommentViewSet(
         if self.action == 'create':
             return CommentCreateSerializer
         if self.action in ['update', 'partial_update']:
-            return CommentCreateSerializer  # текст и coin (coin можно сделать read_only, если не нужен)
+            return CommentCreateSerializer 
         return CommentSerializer
 
     def perform_create(self, serializer):

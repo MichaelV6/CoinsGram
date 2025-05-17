@@ -33,4 +33,3 @@ class CommentAdmin(admin.ModelAdmin):
         perms['view'] = True
         return perms
 
-    # Если используешь verbose_name/verbose_name_plural в модели — это не нужно

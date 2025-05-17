@@ -1,4 +1,3 @@
-
 from rest_framework import viewsets, permissions, mixins
 from django.contrib.auth import get_user_model
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -7,9 +6,11 @@ from rest_framework.permissions import IsAuthenticated
 from .serializers import UserSerializer, SubscriptionSerializer, SetPasswordSerializer
 from .models import Subscription
 from api.exceptions import PermissionDeniedError
+from django.core.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
+from .permissions import IsOwnerOrAdmin
 User = get_user_model()
 
 
