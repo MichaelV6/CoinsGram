@@ -1,0 +1,44 @@
+@startuml Organizational_Structure
+!include Archimate.puml
+
+title Организационная структура клининговой компании
+
+' Топ-менеджмент
+Business_Actor(ceo, "Генеральный директор")
+
+' Директора
+Business_Actor(oper_dir, "Операционный директор")
+Business_Actor(comm_dir, "Коммерческий директор") 
+Business_Actor(fin_dir, "Финансовый директор")
+
+' Операционное направление
+Business_Actor(client_mgr, "Менеджеры по работе\nс клиентами")
+Business_Actor(call_operators, "Операторы\ncall-центра")
+Business_Actor(brigade_leaders, "Бригадиры")
+Business_Actor(cleaners, "Сотрудники клининга")
+
+' Коммерческое направление
+Business_Actor(marketing, "Отдел маркетинга")
+Business_Actor(sales, "Отдел продаж")
+
+' Финансовое направление
+Business_Actor(accounting, "Бухгалтерия")
+Business_Actor(supply, "Отдел снабжения")
+
+' Связи подчинения
+Rel_Composition(ceo, oper_dir)
+Rel_Composition(ceo, comm_dir)
+Rel_Composition(ceo, fin_dir)
+
+Rel_Composition(oper_dir, client_mgr)
+Rel_Composition(oper_dir, call_operators)
+Rel_Composition(oper_dir, brigade_leaders)
+Rel_Composition(brigade_leaders, cleaners)
+
+Rel_Composition(comm_dir, marketing)
+Rel_Composition(comm_dir, sales)
+
+Rel_Composition(fin_dir, accounting)
+Rel_Composition(fin_dir, supply)
+
+@enduml

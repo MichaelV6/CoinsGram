@@ -1,0 +1,63 @@
+@startuml Deployment_Diagram
+!include Archimate.puml
+
+title Диаграмма развертывания клинингового сервиса
+
+' Офисная инфраструктура
+Technology_Node(office_server, "Офисный сервер\nWindows Server 2022")
+Technology_Node(workstation1, "Рабочая станция\nменеджера")
+Technology_Node(workstation2, "Рабочая станция\nбухгалтера")
+
+' Облачная инфраструктура
+Technology_Node(cloud_server, "Облачный сервер\nAzure/AWS")
+Technology_Node(backup_server, "Сервер резервных\nкопий")
+
+' Мобильные устройства
+Technology_Device(client_phone, "Смартфон клиента\nAndroid/iOS")
+Technology_Device(brigade_tablet, "Планшет бригады\nAndroid")
+
+' Сетевая инфраструктура
+Technology_CommunicationNetwork(office_lan, "Офисная LAN")
+Technology_CommunicationNetwork(internet, "Интернет")
+Technology_CommunicationNetwork(mobile_network, "Мобильная сеть")
+
+' Программное обеспечение на серверах
+Technology_SystemSoftware(aspro_deployment, "Aspro.Cloud")
+Technology_SystemSoftware(sql_server, "Microsoft SQL Server 2022")
+Technology_SystemSoftware(accounting_deployment, "1С:Бухгалтерия 8")
+Technology_SystemSoftware(web_server, "IIS Web Server")
+
+' Клиентское ПО
+Technology_SystemSoftware(browser, "Веб-браузер")
+Technology_SystemSoftware(mobile_client_app, "Мобильное приложение\nклиента")
+Technology_SystemSoftware(brigade_mobile_app, "Мобильное приложение\nбригады")
+
+' Размещение ПО на узлах
+Rel_Assignment(aspro_deployment, office_server)
+Rel_Assignment(sql_server, office_server)
+Rel_Assignment(accounting_deployment, office_server)
+Rel_Assignment(web_server, cloud_server)
+
+Rel_Assignment(browser, workstation1)
+Rel_Assignment(browser, workstation2)
+Rel_Assignment(mobile_client_app, client_phone)
+Rel_Assignment(brigade_mobile_app, brigade_tablet)
+
+' Сетевые соединения
+Rel_Association(office_server, office_lan)
+Rel_Association(workstation1, office_lan)
+Rel_Association(workstation2, office_lan)
+
+Rel_Association(office_lan, internet)
+Rel_Association(cloud_server, internet)
+Rel_Association(backup_server, internet)
+
+Rel_Association(client_phone, mobile_network)
+Rel_Association(brigade_tablet, mobile_network)
+Rel_Association(mobile_network, internet)
+
+' Связи между серверами
+Rel_Flow(office_server, cloud_server, "Синхронизация данных")
+Rel_Flow(office_server, backup_server, "Резервное копирование")
+
+@enduml

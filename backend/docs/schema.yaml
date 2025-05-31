@@ -148,9 +148,10 @@ paths:
                 $ref: '#/components/schemas/User'
         '404':
           $ref: '#/components/responses/NotFound'
+
     patch:
       tags: [Пользователи]
-      summary: Обновить данные пользователя
+      summary: Частичное обновление профиля пользователя
       security:
         - BearerAuth: []
       parameters:
@@ -167,19 +168,54 @@ paths:
               $ref: '#/components/schemas/UserUpdate'
       responses:
         '200':
-          description: Обновленный профиль
+          description: Обновлённый профиль
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Пользователи]
+      summary: Полное обновление профиля пользователя
+      description: Заменяет все поля пользователя; доступно владельцу или админу
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Профиль полностью заменён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
     delete:
       tags: [Пользователи]
-      summary: Удалить пользователя (самоудаление аккаунта)
-      description: Удаление своего аккаунта авторизованным пользователем
+      summary: Удаление профиля пользователя
+      description: Удаляет свой аккаунт; после удаления потребуется регистрация заново
       security:
         - BearerAuth: []
       parameters:
@@ -197,6 +233,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+
 
   /api/users/set_password/:
     post:

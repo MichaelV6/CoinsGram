@@ -154,8 +154,9 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API для платформы коллекционирования монет',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
-    
- 
+    'SERVE_PERMISSIONS': ['rest_framework.permissions.AllowAny'],
+    # Эта опция важна для отображения PUT/PATCH и других методов
+    'SERVE_PUBLIC': True,
     'REDOC_TEMPLATE': 'redoc/custom_redoc.html',
     
 

@@ -27,12 +27,17 @@ User = get_user_model()
         responses={204: OpenApiTypes.NONE},
         description="Удаление своего профиля"
     ),
+    update=extend_schema(
+        request=UserSerializer,
+        responses=UserSerializer,
+        description="Полное обновление профиля (PUT) с аватаром",
+    ),
 )
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     parser_classes = (MultiPartParser, FormParser)
-
+    
     @extend_schema(
         request=SetPasswordSerializer,
         responses={
@@ -46,7 +51,6 @@ class UserViewSet(viewsets.ModelViewSet):
     def set_password(self, request):
         serializer = SetPasswordSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
-
         user = request.user
         user.set_password(serializer.validated_data['new_password'])
         user.save()
